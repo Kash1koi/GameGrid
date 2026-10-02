@@ -19,7 +19,7 @@ public class main {
         //}else{
         //    tik.checkWin();
         //}
-
+        
         b1.setPressed(true);
 
     }
