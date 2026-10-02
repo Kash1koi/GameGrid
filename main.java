@@ -1,4 +1,3 @@
-//import button;
 import java.util.*;
 
 public class main {
@@ -12,30 +11,67 @@ public class main {
         button b7 = new button(0, 2);
         button b8 = new button(1, 2);
         button b9 = new button(2, 2);
-        button[] buttons = {b1, b2, b3, b4, b5, b6, b7, b8, b9};
+        button[] buttons = { b1, b2, b3, b4, b5, b6, b7, b8, b9 };
 
-        //PicoReader pico = new PicoReader();
-        //Thread t = new Thread(pico);
-        //t.setDaemon(true);
-        //t.start();
-        //while loop
+        PicoReader pico = new PicoReader();
+        Thread t = new Thread(pico);
+        t.setDaemon(true);
+        t.start();
+        tik toe = new tik();
+        boolean gameEnded = false;
+        int[] previous = new int[9];
 
-        //get serial imputs array
-            //cycle through and check for pressed buttons (1 in the array)
-            //update button states based on serial input (if false than outuput that its bad input)
-            //check for win condition after updating button states
-            //check if the is full
-            //reset or restart the game if it has ended
+        while (!gameEnded) {
+            int[] data = pico.getLatest(); // newest array from the Pico
 
+            if (data.length == 9) {
+                int pressedCount = 0;
+                int pressedIndex = -1;
 
-        // seral data will be array of 9 values as well
-        //if(!tik.update(buttons[2])){
-            //display red dot on the screen
-        //}else{
-        //    tik.checkWin();
-        //}
+                // only count buttons that just changed from 0 to 1
+                for (int i = 0; i < 9; i++) {
+                    if (data[i] == 1 && previous[i] == 0) {
+                        pressedCount++;
+                        pressedIndex = i;
+                    }
+                }
+                previous = data.clone();
 
-        b1.setPressed(true);
+                if (pressedCount > 1) {
+                    System.out.println("Multiple buttons pressed");
+                } else if (pressedCount == 1) {
+                    buttons[pressedIndex].setPressed(true);
 
+                    if (toe.update(buttons[pressedIndex])) {
+                        toe.printGrid();
+                        if (toe.checkWin()) {
+                            System.out.println("Winning move detected");
+                            String winner = tik.turn.equals("X") ? "O" : "X";
+                            System.out.println(winner + " wins!");
+                            gameEnded = true;
+                        } else if (toe.isGridFull()) {
+                            System.out.println("Grid is full");
+                            gameEnded = true;
+                        }
+                    } else {
+                        System.out.println("Invalid button press");
+                    }
+                    resetButtons(buttons);
+                }
+            }
+
+            try {
+                Thread.sleep(20);
+            } catch (InterruptedException e) {
+                break;
+            }
+        }
+
+    }
+
+    public static void resetButtons(button[] butts) {
+        for (button b : butts) {
+            b.setPressed(false);
+        }
     }
 }

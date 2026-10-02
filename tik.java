@@ -1,6 +1,7 @@
 public class tik {
     private String[][] grid = new String[3][3];
     public static String turn = "X";
+
     public tik() {
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
@@ -8,15 +9,19 @@ public class tik {
             }
         }
     }
+
     public String[][] getGrid() {
         return grid;
     }
+
     public void setGrid(int row, int col, String value) {
         grid[row][col] = value;
     }
+
     public static void changeTurn() {
         turn = turn.equals("X") ? "O" : "X";
     }
+
     public void clearGrid() {
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
@@ -24,14 +29,29 @@ public class tik {
             }
         }
     }
+
+    public void printGrid() {
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 3; col++) {
+                String cell = grid[row][col].equals("") ? "-" : grid[row][col];
+                System.out.print(cell + " ");
+            }
+            System.out.println();
+        }
+        System.out.println();
+    }
+
     public boolean update(button b) {
-        if (grid[b.getX()][b.getY()].equals("")) {
-            grid[b.getX()][b.getY()] = turn;
+        int row = b.getY();
+        int col = b.getX();
+        if (grid[row][col].equals("")) {
+            grid[row][col] = turn;
             changeTurn();
             return true;
         }
         return false;
     }
+
     public boolean checkWin() {
         // Check rows
         for (int row = 0; row < 3; row++) {
@@ -54,6 +74,7 @@ public class tik {
         }
         return false;
     }
+
     public boolean isGridFull() {
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
