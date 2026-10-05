@@ -1,9 +1,21 @@
-import com.fazecast.jSerialComm.SerialPort;
 import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class PicoReader implements Runnable {
+    private static final int NUM_BUTTONS = 9;
+
+    private final String device;
     private volatile int[] latest = new int[0];
+
+    public PicoReader() {
+        this("/dev/ttyACM0");
+    }
+
+    public PicoReader(String device) {
+        this.device = device;
+    }
 
     public int[] getLatest() {
         return latest;
@@ -11,33 +23,57 @@ public class PicoReader implements Runnable {
 
     @Override
     public void run() {
-        SerialPort port = SerialPort.getCommPort("/dev/ttyACM0");
-        port.setBaudRate(115200);
-        port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 0, 0);
-        if (!port.openPort()) {
-            System.out.println("Could not open port");
-            return;
-        }
-
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(port.getInputStream()))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
+        try {
+            while (true) {
+                if (!new File(device).exists()) {
+                    System.out.println("Waiting for " + device + " ...");
+                    Thread.sleep(2000);
+                    continue;
+                }
                 try {
-                    String[] parts = line.trim().split(",");
-                    int[] values = new int[parts.length];
-                    for (int i = 0; i < parts.length; i++) {
-                        values[i] = Integer.parseInt(parts[i]);
-                    }
-                    latest = values;  // replaces the old array each time
-                } catch (NumberFormatException e) {
-                    // skip partial lines
+                    configurePort();
+                    System.out.println("Reading from " + device);
+                    readLoop();
+                } catch (IOException e) {
+                    System.out.println("Serial error: " + e.getMessage() + " - retrying...");
+                    latest = new int[0];
+                    Thread.sleep(2000);
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            port.closePort();
+        } catch (InterruptedException e) {
+            // thread was asked to stop
         }
+    }
+
+    /** Put the tty in raw mode so the OS doesn't mangle the data. */
+    private void configurePort() throws IOException, InterruptedException {
+        new ProcessBuilder("stty", "-F", device, "115200", "raw", "-echo")
+                .inheritIO()
+                .start()
+                .waitFor();
+    }
+
+    private void readLoop() throws IOException {
+        try (BufferedReader reader = new BufferedReader(new FileReader(device))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty()) continue;
+
+                String[] parts = line.split(",");
+                if (parts.length != NUM_BUTTONS) continue; // ignore partial lines
+
+                try {
+                    int[] values = new int[NUM_BUTTONS];
+                    for (int i = 0; i < NUM_BUTTONS; i++) {
+                        values[i] = Integer.parseInt(parts[i].trim());
+                    }
+                    latest = values;
+                } catch (NumberFormatException e) {
+                    // skip garbled line
+                }
+            }
+        }
+        throw new IOException("Serial port closed (Pico unplugged?)");
     }
 }
