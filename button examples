@@ -1,0 +1,74 @@
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+
+/**
+ * Reads the Pico's USB serial output ("0,1,0,0,0,0,0,0,0" per line)
+ * and prints button 1-9 press/release events to the terminal.
+ *
+ * Usage: java ButtonMonitor [serial-device]
+ * Default device: /dev/ttyACM0
+ */
+public class ButtonMonitor {
+
+    private static final int NUM_BUTTONS = 9;
+
+    public static void main(String[] args) throws Exception {
+        String device = args.length > 0 ? args[0] : "/dev/ttyACM0";
+
+        System.out.println("Button monitor - reading from " + device);
+        System.out.println("Press Ctrl+C to quit.\n");
+
+        while (true) {
+            if (!new File(device).exists()) {
+                System.out.println("Waiting for " + device + " ...");
+                Thread.sleep(2000);
+                continue;
+            }
+
+            try {
+                configurePort(device);
+                readLoop(device);
+            } catch (IOException e) {
+                System.out.println("Serial error: " + e.getMessage() + " - retrying...");
+                Thread.sleep(2000);
+            }
+        }
+    }
+
+    /** Put the tty in raw mode so the OS doesn't mangle the data. */
+    private static void configurePort(String device) throws IOException, InterruptedException {
+        new ProcessBuilder("stty", "-F", device, "115200", "raw", "-echo")
+                .inheritIO()
+                .start()
+                .waitFor();
+    }
+
+    private static void readLoop(String device) throws IOException {
+        boolean[] previous = new boolean[NUM_BUTTONS];
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(device))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty()) continue;
+
+                String[] parts = line.split(",");
+                if (parts.length != NUM_BUTTONS) continue; // ignore partial/garbled lines
+
+                for (int i = 0; i < NUM_BUTTONS; i++) {
+                    boolean pressed = parts[i].trim().equals("1");
+
+                    if (pressed && !previous[i]) {
+                        System.out.println("Button " + (i + 1) + " pressed");
+                    } else if (!pressed && previous[i]) {
+                        System.out.println("Button " + (i + 1) + " released");
+                    }
+                    previous[i] = pressed;
+                }
+            }
+        }
+        throw new IOException("Serial port closed (Pico unplugged?)");
+    }
+}
