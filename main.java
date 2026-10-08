@@ -1,34 +1,30 @@
-import java.util.*;
-
 public class main {
     public static void main(String[] args) {
-        button b1 = new button(0, 0);
-        button b2 = new button(1, 0);
-        button b3 = new button(2, 0);
-        button b4 = new button(0, 1);
-        button b5 = new button(1, 1);
-        button b6 = new button(2, 1);
-        button b7 = new button(0, 2);
-        button b8 = new button(1, 2);
-        button b9 = new button(2, 2);
-        button[] buttons = { b1, b2, b3, b4, b5, b6, b7, b8, b9 };
+        // same grid positions as before: x = column, y = row
+        button[] buttons = new button[9];
+        for (int i = 0; i < 9; i++) {
+            buttons[i] = new button(i % 3, i / 3);
+        }
 
         PicoReader pico = new PicoReader();
         Thread t = new Thread(pico);
         t.setDaemon(true);
         t.start();
+
+        TikGui gui = new TikGui(false); // change to true for fullscreen on the Pi
         tik toe = new tik();
-        boolean gameEnded = false;
+        gui.showBoard(toe.getGrid());
+        gui.setStatus("X's turn");
+
         int[] previous = new int[9];
 
-        while (!gameEnded) {
-            int[] data = pico.getLatest(); // newest array from the Pico
+        while (true) {
+            int[] data = pico.getLatest();
 
             if (data.length == 9) {
                 int pressedCount = 0;
                 int pressedIndex = -1;
 
-                // only count buttons that just changed from 0 to 1
                 for (int i = 0; i < 9; i++) {
                     if (data[i] == 1 && previous[i] == 0) {
                         pressedCount++;
@@ -38,40 +34,48 @@ public class main {
                 previous = data.clone();
 
                 if (pressedCount > 1) {
-                    System.out.println("Multiple buttons pressed");
+                    gui.setStatus("One button at a time! " + tik.turn + "'s turn");
                 } else if (pressedCount == 1) {
-                    buttons[pressedIndex].setPressed(true);
-
                     if (toe.update(buttons[pressedIndex])) {
-                        toe.printGrid();
+                        gui.showBoard(toe.getGrid());
+
+                        boolean over = false;
                         if (toe.checkWin()) {
-                            System.out.println("Winning move detected");
                             String winner = tik.turn.equals("X") ? "O" : "X";
-                            System.out.println(winner + " wins!");
-                            gameEnded = true;
+                            gui.setStatus(winner + " wins!");
+                            over = true;
                         } else if (toe.isGridFull()) {
-                            System.out.println("Grid is full");
-                            gameEnded = true;
+                            gui.setStatus("It's a draw!");
+                            over = true;
+                        } else {
+                            gui.setStatus(tik.turn + "'s turn");
+                        }
+
+                        if (over) {
+                            pause(4000);
+                            toe.clearGrid();
+                            tik.turn = "X";
+                            gui.showBoard(toe.getGrid());
+                            gui.setStatus("X's turn");
+                            // ignore anything held down during the pause
+                            int[] now = pico.getLatest();
+                            previous = (now.length == 9) ? now.clone() : new int[9];
                         }
                     } else {
-                        System.out.println("Invalid button press");
+                        gui.setStatus("Square taken! " + tik.turn + "'s turn");
                     }
-                    resetButtons(buttons);
                 }
             }
 
-            try {
-                Thread.sleep(20);
-            } catch (InterruptedException e) {
-                break;
-            }
+            pause(20);
         }
-
     }
 
-    public static void resetButtons(button[] butts) {
-        for (button b : butts) {
-            b.setPressed(false);
+    private static void pause(int ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 }
