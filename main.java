@@ -11,7 +11,7 @@ public class main {
         t.setDaemon(true);
         t.start();
 
-        TikGui gui = new TikGui(false); // change to true for fullscreen on the Pi
+        TikGui gui = new TikGui(false); // change to true for fullscreen
         tik toe = new tik();
         gui.showBoard(toe.getGrid());
         gui.setStatus("X's turn");
