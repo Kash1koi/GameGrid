@@ -22,7 +22,7 @@ public class TikGui {
             frame.setLayout(new BorderLayout());
             frame.getContentPane().setBackground(Color.BLACK);
 
-            JPanel board = new JPanel(new GridLayout(3, 3, 4, 4));
+            JPanel board = new JPanel(new GridLayout(3, 3, 10, 10));
             board.setBackground(LINE_COLOR);   // shows through the gaps as grid lines
             for (int row = 0; row < 3; row++) {
                 for (int col = 0; col < 3; col++) {
