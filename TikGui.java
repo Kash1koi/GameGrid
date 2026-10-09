@@ -32,9 +32,7 @@ public class TikGui {
                 public void componentResized(ComponentEvent e) {
                     int size = Math.min(board.getWidth(), board.getHeight()) / 5;
                     Font f = new Font(Font.SANS_SERIF, Font.BOLD, Math.max(size, 12));
-                    for (JLabel[] r : cells)
-                        for (JLabel c : r)
-                            c.setFont(f);
+                    for (JLabel[] r : cells) for (JLabel c : r) c.setFont(f);
                 }
             });
 
@@ -43,7 +41,7 @@ public class TikGui {
             status.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
             frame.add(board, BorderLayout.CENTER);
-            frame.add(status, BorderLayout.SOUTH);
+            frame.add(status, BorderLayout.NORTH);   // top, so it can't be cut off
 
             if (fullscreen) {
                 frame.setUndecorated(true);
@@ -54,13 +52,16 @@ public class TikGui {
                         KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
                         JComponent.WHEN_IN_FOCUSED_WINDOW);
             } else {
-                frame.setSize(500, 580);
+                frame.setSize(400, 440);
                 frame.setLocationRelativeTo(null);
             }
             frame.setVisible(true);
+            frame.revalidate();
+            frame.repaint();
         });
     }
 
+    /** Draw the board from the tik grid. Safe to call from any thread. */
     public void showBoard(String[][] grid) {
         String[][] copy = new String[3][3];
         for (int r = 0; r < 3; r++) {
@@ -81,7 +82,7 @@ public class TikGui {
         });
     }
 
-    // Change the message under the board
+    /** Change the message at the top. Safe to call from any thread. */
     public void setStatus(String text) {
         SwingUtilities.invokeLater(() -> {
             status.setText(text);
