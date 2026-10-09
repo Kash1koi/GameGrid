@@ -15,7 +15,7 @@ public class MenuScreen implements Screen {
         view.setLayout(new BoxLayout(view, BoxLayout.Y_AXIS));
         view.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        view.add(label("Choose a game", 36, Color.WHITE));
+        view.add(label("Choose a game", 36, Color.GREEN));
         view.add(Box.createVerticalStrut(20));
         for (int i = 0; i < games.size() && i < 9; i++) {
             view.add(label((i + 1) + ".  " + games.get(i).getTitle(), 28,
