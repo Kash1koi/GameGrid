@@ -36,9 +36,10 @@ public class main {
                 if (pressedCount > 1) {
                     gui.setStatus("One button at a time! " + tik.turn + "'s turn");
                 } else if (pressedCount == 1) {
+                    System.out.println("Press detected on button index " + pressedIndex);
                     if (toe.update(buttons[pressedIndex])) {
                         gui.showBoard(toe.getGrid());
-
+                        toe.printGrid();
                         boolean over = false;
                         if (toe.checkWin()) {
                             String winner = tik.turn.equals("X") ? "O" : "X";

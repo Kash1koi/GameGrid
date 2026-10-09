@@ -32,7 +32,9 @@ public class TikGui {
                 public void componentResized(ComponentEvent e) {
                     int size = Math.min(board.getWidth(), board.getHeight()) / 5;
                     Font f = new Font(Font.SANS_SERIF, Font.BOLD, Math.max(size, 12));
-                    for (JLabel[] r : cells) for (JLabel c : r) c.setFont(f);
+                    for (JLabel[] r : cells)
+                        for (JLabel c : r)
+                            c.setFont(f);
                 }
             });
 
@@ -73,11 +75,18 @@ public class TikGui {
                     cells[r][c].setForeground(copy[r][c].equals("X") ? Color.BLUE : Color.RED);
                 }
             }
+            frame.getContentPane().revalidate();
+            frame.getContentPane().repaint();
+            Toolkit.getDefaultToolkit().sync();
         });
     }
 
     // Change the message under the board
     public void setStatus(String text) {
-        SwingUtilities.invokeLater(() -> status.setText(text));
+        SwingUtilities.invokeLater(() -> {
+            status.setText(text);
+            status.repaint();
+            Toolkit.getDefaultToolkit().sync();
+        });
     }
 }
