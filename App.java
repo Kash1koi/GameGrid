@@ -116,13 +116,18 @@ public class App {
 
         if (fullscreen) {
             frame.setUndecorated(true);
+            frame.setAlwaysOnTop(true);
             frame.getRootPane().registerKeyboardAction(
                     e -> System.exit(0),
                     KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
                     JComponent.WHEN_IN_FOCUSED_WINDOW);
             GraphicsDevice screen = GraphicsEnvironment
                     .getLocalGraphicsEnvironment().getDefaultScreenDevice();
-            frame.setBounds(screen.getDefaultConfiguration().getBounds());
+            if (screen.isFullScreenSupported()) {
+                screen.setFullScreenWindow(frame);
+            } else {
+                frame.setBounds(screen.getDefaultConfiguration().getBounds());
+            }
         } else {
             frame.setSize(400, 440);
             frame.setLocationRelativeTo(null);
