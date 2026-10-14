@@ -6,6 +6,7 @@ public class MenuScreen implements Screen {
     private final App app;
     private final List<Screen> games;
     private final JPanel view = new JPanel();
+    private final JLabel hint = label("Press a numbered button to play", 18, Color.GRAY);
 
     public MenuScreen(App app, List<Screen> games) {
         this.app = app;
@@ -23,7 +24,7 @@ public class MenuScreen implements Screen {
             view.add(Box.createVerticalStrut(10));
         }
         view.add(Box.createVerticalGlue());
-        view.add(label("Press a numbered button to play", 18, Color.GRAY));
+        view.add(hint);
     }
 
     private JLabel label(String text, int size, Color color) {
@@ -34,9 +35,24 @@ public class MenuScreen implements Screen {
         return l;
     }
 
-    @Override public String getTitle() { return "Menu"; }
-    @Override public JComponent getView() { return view; }
-    @Override public void onShow() {}
+    @Override
+    public String getTitle() {
+        return "Menu";
+    }
+
+    @Override
+    public JComponent getView() {
+        return view;
+    }
+
+    public void setHint(String text) {
+        SwingUtilities.invokeLater(() -> hint.setText(text));
+    }
+
+    @Override
+    public void onShow() {
+        setHint("Press a numbered button to play");
+    }
 
     @Override
     public void onPress(int index) {
