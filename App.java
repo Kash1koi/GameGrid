@@ -45,7 +45,7 @@ public class App {
 
     public void run() {
         menu = new MenuScreen(this, games);
-
+        long quitStart = 0;
         SwingUtilities.invokeLater(() -> {
             root.add(menu.getView(), menu.getTitle());
             for (Screen g : games) {
@@ -66,6 +66,17 @@ public class App {
 
         while (true) {
             int[] data = pico.getLatest();
+            boolean quitCombo = data.length >= 9 && data[2] == 1 && data[5] == 1;
+            if (quitCombo) {
+                long now = System.currentTimeMillis();
+                if (quitStart == 0) {
+                    quitStart = now;
+                } else if (now - quitStart >= 2000) {
+                    System.exit(0);
+                }
+            } else {
+                quitStart = 0;
+            }
             boolean combo = data.length >= 9 && data[5] == 1 && data[8] == 1 && current == menu;
             if (combo) {
                 long now = System.currentTimeMillis();
