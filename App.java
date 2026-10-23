@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.io.IOException;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class App {
     private final PicoReader pico = new PicoReader();
@@ -12,6 +15,8 @@ public class App {
     private final CardLayout cards = new CardLayout();
     private final JPanel root = new JPanel(cards);
     private final boolean fullscreen;
+    private static final int BACK = -1;
+    private final ConcurrentLinkedQueue<Integer> touchQueue = new ConcurrentLinkedQueue<>();
     private JFrame frame;
     private MenuScreen menu;
     private Screen current;
@@ -114,7 +119,14 @@ public class App {
                     current.onPress(index);
                 }
             }
-
+            Integer tap;
+            while ((tap = touchQueue.poll()) != null) {
+                if (tap == BACK) {
+                    showMenu();
+                } else {
+                    current.onPress(tap);
+                }
+            }
             current.onTick();
             pause(20);
         }
@@ -152,5 +164,32 @@ public class App {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    /** Make a component act like button `index` (0-8) when tapped. */
+    public void onTap(JComponent c, int index) {
+        c.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                touchQueue.add(index);
+            }
+        });
+    }
+
+    /** A "< Menu" strip that returns to the menu when tapped. */
+    public JComponent backButton() {
+        JLabel b = new JLabel("< Menu", SwingConstants.CENTER);
+        b.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
+        b.setForeground(Color.GRAY);
+        b.setOpaque(true);
+        b.setBackground(Color.BLACK);
+        b.setBorder(BorderFactory.createEmptyBorder(14, 10, 14, 10));
+        b.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                touchQueue.add(BACK);
+            }
+        });
+        return b;
     }
 }

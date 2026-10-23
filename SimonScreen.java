@@ -51,6 +51,7 @@ public class SimonScreen implements Screen {
             cell.setOpaque(true);
             cell.setBackground(dim(COLORS[i]));
             cells[i] = cell;
+            app.onTap(cell, i);
             board.add(cell);
         }
 
@@ -62,6 +63,7 @@ public class SimonScreen implements Screen {
 
         view.add(board, BorderLayout.CENTER);
         view.add(status, BorderLayout.NORTH);
+        view.add(app.backButton(), BorderLayout.SOUTH);
     }
 
     @Override public String getTitle() { return "Simon Says"; }

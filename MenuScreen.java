@@ -19,9 +19,11 @@ public class MenuScreen implements Screen {
         view.add(label("Choose a game", 36, Color.GREEN));
         view.add(Box.createVerticalStrut(20));
         for (int i = 0; i < games.size() && i < 9; i++) {
-            view.add(label((i + 1) + ".  " + games.get(i).getTitle(), 28,
-                    new Color(80, 170, 255)));
-            view.add(Box.createVerticalStrut(10));
+            JLabel item = label((i + 1) + ".  " + games.get(i).getTitle(), 28,
+                    new Color(80, 170, 255));
+            item.setBorder(BorderFactory.createEmptyBorder(12, 60, 12, 60));
+            app.onTap(item, i);
+            view.add(item);
         }
         view.add(Box.createVerticalGlue());
         view.add(hint);

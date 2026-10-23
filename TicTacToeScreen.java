@@ -34,6 +34,7 @@ public class TicTacToeScreen implements Screen {
                 cell.setOpaque(true);
                 cell.setBackground(CELL_BG);
                 cells[row][col] = cell;
+                app.onTap(cell, row * 3 + col);
                 board.add(cell);
             }
         }
@@ -54,6 +55,7 @@ public class TicTacToeScreen implements Screen {
 
         view.add(board, BorderLayout.CENTER);
         view.add(status, BorderLayout.NORTH);
+        view.add(app.backButton(), BorderLayout.SOUTH);
     }
 
     @Override public String getTitle() { return "Tic Tac Toe"; }
