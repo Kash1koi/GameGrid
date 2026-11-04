@@ -1,51 +1,137 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.List;
 
 public class MenuScreen implements Screen {
+    public static final String DEFAULT_HINT = "Tap a game or press its number";
+
+    private static final Color BG = Color.BLACK;
+    private static final Color TILE_BG = new Color(28, 30, 38);
+    private static final Color ACCENT = new Color(80, 170, 255);
+    private static final Color DANGER = new Color(150, 45, 45);
+    private static final Color DANGER_ARMED = new Color(230, 40, 40);
+
     private final App app;
     private final List<Screen> games;
-    private final JPanel view = new JPanel();
-    private final JLabel hint = label("Press a numbered button to play", 18, Color.GRAY);
+    private final JPanel view = new JPanel(new BorderLayout());
+    private final JLabel hint = new JLabel(DEFAULT_HINT, SwingConstants.CENTER);
+    private final JLabel shutdownBtn;
+    private final Timer disarmTimer;
+    private boolean shutdownArmed = false;
 
     public MenuScreen(App app, List<Screen> games) {
         this.app = app;
         this.games = games;
 
-        view.setBackground(Color.BLACK);
-        view.setLayout(new BoxLayout(view, BoxLayout.Y_AXIS));
-        view.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        disarmTimer = new Timer(3000, e -> disarm());
+        disarmTimer.setRepeats(false);
 
-        view.add(label("Choose a game", 36, Color.GREEN));
-        view.add(Box.createVerticalStrut(20));
+        view.setBackground(BG);
+        view.setBorder(BorderFactory.createEmptyBorder(16, 24, 16, 24));
+
+        // title
+        JLabel title = new JLabel("Choose a game", SwingConstants.CENTER);
+        title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 40));
+        title.setForeground(Color.GREEN);
+        title.setBorder(BorderFactory.createEmptyBorder(0, 0, 14, 0));
+        view.add(title, BorderLayout.NORTH);
+
+        // game tiles, two per row
+        JPanel grid = new JPanel(new GridLayout(0, 2, 14, 14));
+        grid.setBackground(BG);
         for (int i = 0; i < games.size() && i < 9; i++) {
-            JLabel item = label((i + 1) + ".  " + games.get(i).getTitle(), 28,
-                    new Color(80, 170, 255));
-            item.setBorder(BorderFactory.createEmptyBorder(12, 60, 12, 60));
-            app.onTap(item, i);
-            view.add(item);
+            grid.add(makeTile(i, games.get(i).getTitle()));
         }
-        view.add(Box.createVerticalGlue());
-        view.add(hint);
+        view.add(grid, BorderLayout.CENTER);
+
+        // bottom: hint line, then the two buttons
+        hint.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 18));
+        hint.setForeground(Color.GRAY);
+        hint.setBorder(BorderFactory.createEmptyBorder(12, 0, 10, 0));
+
+        shutdownBtn = makeButton("Shut down", DANGER);
+        JLabel closeBtn = makeButton("Close app", new Color(70, 74, 86));
+
+        shutdownBtn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (shutdownArmed) {
+                    disarm();
+                    app.requestShutdown();
+                } else {
+                    shutdownArmed = true;
+                    shutdownBtn.setText("Tap again to confirm");
+                    shutdownBtn.setBackground(DANGER_ARMED);
+                    disarmTimer.restart();
+                }
+            }
+        });
+        closeBtn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                app.requestQuit();
+            }
+        });
+
+        JPanel buttons = new JPanel(new GridLayout(1, 2, 14, 0));
+        buttons.setBackground(BG);
+        buttons.add(shutdownBtn);
+        buttons.add(closeBtn);
+
+        JPanel bottom = new JPanel(new BorderLayout());
+        bottom.setBackground(BG);
+        bottom.add(hint, BorderLayout.NORTH);
+        bottom.add(buttons, BorderLayout.CENTER);
+        view.add(bottom, BorderLayout.SOUTH);
     }
 
-    private JLabel label(String text, int size, Color color) {
-        JLabel l = new JLabel(text);
-        l.setFont(new Font(Font.SANS_SERIF, Font.BOLD, size));
-        l.setForeground(color);
-        l.setAlignmentX(Component.CENTER_ALIGNMENT);
-        return l;
+    private JPanel makeTile(int index, String name) {
+        JPanel tile = new JPanel();
+        tile.setLayout(new BoxLayout(tile, BoxLayout.Y_AXIS));
+        tile.setBackground(TILE_BG);
+        tile.setBorder(BorderFactory.createLineBorder(ACCENT, 2));
+
+        JLabel num = new JLabel(String.valueOf(index + 1));
+        num.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 48));
+        num.setForeground(ACCENT);
+        num.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel label = new JLabel(name);
+        label.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
+        label.setForeground(Color.WHITE);
+        label.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        tile.add(Box.createVerticalGlue());
+        tile.add(num);
+        tile.add(label);
+        tile.add(Box.createVerticalGlue());
+
+        app.onTap(tile, index);   // tapping the tile starts that game
+        return tile;
     }
 
-    @Override
-    public String getTitle() {
-        return "Menu";
+    private JLabel makeButton(String text, Color bg) {
+        JLabel b = new JLabel(text, SwingConstants.CENTER);
+        b.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
+        b.setForeground(Color.WHITE);
+        b.setOpaque(true);
+        b.setBackground(bg);
+        b.setBorder(BorderFactory.createEmptyBorder(16, 10, 16, 10));
+        return b;
     }
 
-    @Override
-    public JComponent getView() {
-        return view;
+    /** Put the shutdown button back to normal. Must run on the Swing thread. */
+    private void disarm() {
+        shutdownArmed = false;
+        disarmTimer.stop();
+        shutdownBtn.setText("Shut down");
+        shutdownBtn.setBackground(DANGER);
     }
+
+    @Override public String getTitle() { return "Menu"; }
+    @Override public JComponent getView() { return view; }
 
     public void setHint(String text) {
         SwingUtilities.invokeLater(() -> hint.setText(text));
@@ -53,7 +139,8 @@ public class MenuScreen implements Screen {
 
     @Override
     public void onShow() {
-        setHint("Press a numbered button to play");
+        SwingUtilities.invokeLater(this::disarm);
+        setHint(DEFAULT_HINT);
     }
 
     @Override

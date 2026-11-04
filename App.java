@@ -1,22 +1,26 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.io.IOException;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class App {
+    // special codes sent through the touch queue
+    private static final int BACK = -1;
+    private static final int SHUTDOWN = -2;
+    private static final int QUIT = -3;
+
     private final PicoReader pico = new PicoReader();
     private final List<Screen> games = new ArrayList<>();
     private final CardLayout cards = new CardLayout();
     private final JPanel root = new JPanel(cards);
-    private final boolean fullscreen;
-    private static final int BACK = -1;
     private final ConcurrentLinkedQueue<Integer> touchQueue = new ConcurrentLinkedQueue<>();
+    private final boolean fullscreen;
     private JFrame frame;
     private MenuScreen menu;
     private Screen current;
@@ -40,6 +44,41 @@ public class App {
         show(menu);
     }
 
+    /** Make a component act like button `index` (0-8) when tapped. */
+    public void onTap(JComponent c, int index) {
+        c.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                touchQueue.add(index);
+            }
+        });
+    }
+
+    /** A "< Menu" strip that returns to the menu when tapped. */
+    public JComponent backButton() {
+        JLabel b = new JLabel("< Menu", SwingConstants.CENTER);
+        b.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
+        b.setForeground(Color.GRAY);
+        b.setOpaque(true);
+        b.setBackground(Color.BLACK);
+        b.setBorder(BorderFactory.createEmptyBorder(14, 10, 14, 10));
+        b.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                touchQueue.add(BACK);
+            }
+        });
+        return b;
+    }
+
+    public void requestShutdown() {
+        touchQueue.add(SHUTDOWN);
+    }
+
+    public void requestQuit() {
+        touchQueue.add(QUIT);
+    }
+
     private void shutdownPi() {
         try {
             new ProcessBuilder("sudo", "-n", "/usr/sbin/shutdown", "-h", "now").inheritIO().start();
@@ -50,7 +89,7 @@ public class App {
 
     public void run() {
         menu = new MenuScreen(this, games);
-        long quitStart = 0;
+
         SwingUtilities.invokeLater(() -> {
             root.add(menu.getView(), menu.getTitle());
             for (Screen g : games) {
@@ -66,22 +105,14 @@ public class App {
         showMenu();
         int[] previous = new int[10];
 
-        long comboStart = 0;
+        long comboStart = 0;   // timer for holding buttons 6 + 9 (shutdown)
+        long quitStart = 0;    // timer for holding buttons 7 + 8 (quit)
         boolean shuttingDown = false;
 
         while (true) {
             int[] data = pico.getLatest();
-            boolean quitCombo = data.length >= 9 && data[2] == 1 && data[5] == 1;
-            if (quitCombo) {
-                long now = System.currentTimeMillis();
-                if (quitStart == 0) {
-                    quitStart = now;
-                } else if (now - quitStart >= 2000) {
-                    System.exit(0);
-                }
-            } else {
-                quitStart = 0;
-            }
+
+            // hold buttons 6 + 9 on the menu for 2 seconds: shut down
             boolean combo = data.length >= 9 && data[5] == 1 && data[8] == 1 && current == menu;
             if (combo) {
                 long now = System.currentTimeMillis();
@@ -96,10 +127,24 @@ public class App {
             } else if (comboStart != 0) {
                 comboStart = 0;
                 if (!shuttingDown) {
-                    menu.setHint("Press a numbered button to play");
+                    menu.setHint(MenuScreen.DEFAULT_HINT);
                 }
             }
 
+            // hold buttons 7 + 8 on any screen for 2 seconds: quit the program
+            boolean quitCombo = data.length >= 9 && data[6] == 1 && data[7] == 1;
+            if (quitCombo) {
+                long now = System.currentTimeMillis();
+                if (quitStart == 0) {
+                    quitStart = now;
+                } else if (now - quitStart >= 2000) {
+                    System.exit(0);
+                }
+            } else {
+                quitStart = 0;
+            }
+
+            // new presses from the Pico buttons
             if (data.length >= 9) {
                 int count = 0;
                 int index = -1;
@@ -119,14 +164,25 @@ public class App {
                     current.onPress(index);
                 }
             }
+
+            // taps from the touch screen
             Integer tap;
             while ((tap = touchQueue.poll()) != null) {
                 if (tap == BACK) {
                     showMenu();
+                } else if (tap == QUIT) {
+                    System.exit(0);
+                } else if (tap == SHUTDOWN) {
+                    if (!shuttingDown) {
+                        shuttingDown = true;
+                        menu.setHint("Shutting down...");
+                        shutdownPi();
+                    }
                 } else {
                     current.onPress(tap);
                 }
             }
+
             current.onTick();
             pause(20);
         }
@@ -164,33 +220,5 @@ public class App {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-    }
-
-    /** Make a component act like button `index` (0-8) when tapped. */
-    public void onTap(JComponent c, int index) {
-        c.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                System.out.println("tap received, index " + index);
-                touchQueue.add(index);
-            }
-        });
-    }
-
-    /** A "< Menu" strip that returns to the menu when tapped. */
-    public JComponent backButton() {
-        JLabel b = new JLabel("< Menu", SwingConstants.CENTER);
-        b.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
-        b.setForeground(Color.GRAY);
-        b.setOpaque(true);
-        b.setBackground(Color.BLACK);
-        b.setBorder(BorderFactory.createEmptyBorder(14, 10, 14, 10));
-        b.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                touchQueue.add(BACK);
-            }
-        });
-        return b;
     }
 }
