@@ -3,7 +3,6 @@ public class main {
         App app = new App(true);
         app.addGame(new TicTacToeScreen(app));
         app.addGame(new SimonScreen(app));
-        app.addGame(new PlaceholderScreen(app, "Game 3"));
         app.run();
     }
 }
