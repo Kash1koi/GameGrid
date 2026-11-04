@@ -171,6 +171,7 @@ public class App {
         c.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
+                System.out.println("tap received, index " + index);
                 touchQueue.add(index);
             }
         });
