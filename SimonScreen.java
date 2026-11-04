@@ -12,15 +12,15 @@ public class SimonScreen implements Screen {
 
     // one color per grid square, same order as the buttons (top-left to bottom-right)
     private static final Color[] COLORS = {
-        new Color(230, 60, 60),    // red
-        new Color(255, 150, 30),   // orange
-        new Color(240, 220, 50),   // yellow
-        new Color(70, 200, 90),    // green
-        new Color(50, 200, 190),   // teal
-        new Color(70, 130, 255),   // blue
-        new Color(160, 90, 230),   // purple
-        new Color(240, 110, 190),  // pink
-        new Color(235, 235, 235)   // white
+        new Color(243, 246, 244),    // white
+        new Color(203, 243, 187),   // green
+        new Color(255, 162, 89),   // orange
+        new Color(46, 51, 50),    // black
+        new Color(255, 233, 169),   // yellow
+        new Color(255, 86, 86),   // red
+        new Color(170, 173, 172),   // grey
+        new Color(146, 238, 255),  // blue
+        new Color(255, 190, 251)   // purple
     };
 
     private final App app;
