@@ -4,8 +4,6 @@ import java.io.FileReader;
 import java.io.IOException;
 
 public class PicoReader implements Runnable {
-    private static final int NUM_BUTTONS = 9;
-
     private final String device;
     private volatile int[] latest = new int[0];
 
@@ -61,19 +59,33 @@ public class PicoReader implements Runnable {
                 if (line.isEmpty()) continue;
 
                 String[] parts = line.split(",");
-                if (parts.length != NUM_BUTTONS) continue; // ignore partial lines
+                if (parts.length < 9 || parts.length > 10) continue; // ignore partial lines
 
                 try {
-                    int[] values = new int[NUM_BUTTONS];
-                    for (int i = 0; i < NUM_BUTTONS; i++) {
+                    int[] values = new int[parts.length];
+                    for (int i = 0; i < parts.length; i++) {
                         values[i] = Integer.parseInt(parts[i].trim());
                     }
-                    latest = values;
+                    latest = transpose(values);
                 } catch (NumberFormatException e) {
                     // skip garbled line
                 }
             }
         }
         throw new IOException("Serial port closed (Pico unplugged?)");
+    }
+
+    /**
+     * Swap rows and columns of the first 9 values (the 3x3 grid).
+     * A 10th value, if present, stays where it is.
+     */
+    private static int[] transpose(int[] v) {
+        int[] out = v.clone();
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 3; col++) {
+                out[row * 3 + col] = v[col * 3 + row];
+            }
+        }
+        return out;
     }
 }

@@ -22,7 +22,7 @@ public class TicTacToeScreen implements Screen {
     public TicTacToeScreen(App app) {
         this.app = app;
         for (int i = 0; i < 9; i++) {
-            buttons[i] = new button(i / 3, i % 3);   // x = column, y = row
+            buttons[i] = new button(i % 3, i / 3);   // x = column, y = row
         }
 
         view.setBackground(Color.BLACK);
