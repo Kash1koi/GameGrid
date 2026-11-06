@@ -4,9 +4,10 @@ import java.util.Random;
 
 public class SimonScreen implements Screen {
     private static final int MAX_ROUNDS = 12;
-    private static final long FLASH_MS = 1000;       // how long each color stays lit
-    private static final long GAP_MS = 300;          // dark pause between flashes
-    private static final long PRESS_FLASH_MS = 250;  // feedback when you press a button
+    private static final long FLASH_MS = 1000;       // how long a square stays dimmed
+    private static final long GAP_MS = 300;          // bright pause between dims
+    private static final long PRESS_FLASH_MS = 250;  // feedback when you press a square
+    private static final int DIM_DIVISOR = 4;        // bigger number = darker dim
 
     private enum State { SHOWING, INPUT, RESULT }
 
@@ -31,12 +32,12 @@ public class SimonScreen implements Screen {
 
     private final int[] sequence = new int[MAX_ROUNDS];
     private State state = State.RESULT;
-    private int round;        // how many colors the player must repeat this round
-    private int showIndex;    // which color of the sequence is being shown
-    private boolean lit;      // true while a color is currently lit
+    private int round;        // how many squares the player must repeat this round
+    private int showIndex;    // which square of the sequence is being shown
+    private boolean dimmed;   // true while a square is currently dimmed
     private long phaseEnd;
     private int inputIndex;   // how many the player has entered correctly this round
-    private boolean pressLit;
+    private boolean pressDim;
     private long pressEnd;
     private long returnAt;
 
@@ -49,7 +50,7 @@ public class SimonScreen implements Screen {
         for (int i = 0; i < 9; i++) {
             JLabel cell = new JLabel("", SwingConstants.CENTER);
             cell.setOpaque(true);
-            cell.setBackground(dim(COLORS[i]));
+            cell.setBackground(COLORS[i]);   // bright by default
             cells[i] = cell;
             app.onTap(cell, i);
             board.add(cell);
@@ -75,18 +76,18 @@ public class SimonScreen implements Screen {
             sequence[i] = rnd.nextInt(9);
         }
         round = 1;
-        pressLit = false;
-        setLit(-1);
+        pressDim = false;
+        setDim(-1);
         startShowing(1200);
     }
 
     @Override
     public void onPress(int index) {
-        if (state != State.INPUT) return;   // ignore presses while colors are showing
+        if (state != State.INPUT) return;   // ignore presses while squares are showing
 
         long now = System.currentTimeMillis();
-        setLit(index);
-        pressLit = true;
+        setDim(index);                       // the pressed square dims briefly
+        pressDim = true;
         pressEnd = now + PRESS_FLASH_MS;
 
         if (index != sequence[inputIndex]) {
@@ -102,8 +103,6 @@ public class SimonScreen implements Screen {
         } else if (round == MAX_ROUNDS) {
             state = State.RESULT;
             returnAt = now + 5000;
-            pressLit = false;
-            setLit(-2);   // light every square to celebrate
             setStatus("You win! " + MAX_ROUNDS + " in a row!");
         } else {
             round++;
@@ -115,27 +114,27 @@ public class SimonScreen implements Screen {
     public void onTick() {
         long now = System.currentTimeMillis();
 
-        if (pressLit && now >= pressEnd) {
-            pressLit = false;
-            setLit(-1);
+        if (pressDim && now >= pressEnd) {
+            pressDim = false;
+            setDim(-1);
         }
 
         if (state == State.SHOWING) {
             if (now < phaseEnd) return;
 
-            if (!lit) {
+            if (!dimmed) {
                 if (showIndex >= round) {
                     state = State.INPUT;
                     inputIndex = 0;
                     setStatus("Your turn: 0 of " + round);
                     return;
                 }
-                setLit(sequence[showIndex]);
-                lit = true;
+                setDim(sequence[showIndex]);   // dim the next square in the sequence
+                dimmed = true;
                 phaseEnd = now + FLASH_MS;
             } else {
-                setLit(-1);
-                lit = false;
+                setDim(-1);                    // back to all bright
+                dimmed = false;
                 showIndex++;
                 phaseEnd = now + GAP_MS;
             }
@@ -147,17 +146,16 @@ public class SimonScreen implements Screen {
     private void startShowing(long delayMs) {
         state = State.SHOWING;
         showIndex = 0;
-        lit = false;
+        dimmed = false;
         phaseEnd = System.currentTimeMillis() + delayMs;
         setStatus("Round " + round + " of " + MAX_ROUNDS + " - watch");
     }
 
-    /** idx 0-8 lights that square, -1 lights none, -2 lights all. */
-    private void setLit(int idx) {
+    /** idx 0-8 dims that square (all others stay bright), -1 leaves everything bright. */
+    private void setDim(int idx) {
         SwingUtilities.invokeLater(() -> {
             for (int i = 0; i < 9; i++) {
-                boolean on = (idx == -2) || (idx == i);
-                cells[i].setBackground(on ? COLORS[i] : dim(COLORS[i]));
+                cells[i].setBackground(i == idx ? dim(COLORS[i]) : COLORS[i]);
             }
             view.revalidate();
             view.repaint();
@@ -174,6 +172,8 @@ public class SimonScreen implements Screen {
     }
 
     private static Color dim(Color c) {
-        return new Color(c.getRed() / 4, c.getGreen() / 4, c.getBlue() / 4);
+        return new Color(c.getRed() / DIM_DIVISOR,
+                         c.getGreen() / DIM_DIVISOR,
+                         c.getBlue() / DIM_DIVISOR);
     }
 }
