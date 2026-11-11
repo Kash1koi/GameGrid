@@ -12,7 +12,8 @@ public class MenuScreen implements Screen {
     private static final Color ACCENT = new Color(80, 170, 255);
     private static final Color DANGER = new Color(150, 45, 45);
     private static final Color DANGER_ARMED = new Color(230, 40, 40);
-    private static final int KEY_SIZE = 40;   // size of each number square in the controller diagram
+    private static final int KEY_SIZE = 36; // size of each number square in the controller diagram
+    private static final int SIDE_WIDTH = 220; // width of the instructions panel
 
     private final App app;
     private final List<Screen> games;
@@ -91,15 +92,22 @@ public class MenuScreen implements Screen {
         view.add(makeInstructions(), BorderLayout.EAST);
     }
 
-    /** The "how to play" panel: a 3x3 diagram of the controller plus a short explanation. */
+    /**
+     * The "how to play" panel: a 3x3 diagram of the controller plus a short
+     * explanation.
+     */
+    /**
+     * The "how to play" panel: a 3x3 diagram of the controller plus a short
+     * explanation.
+     */
     private JPanel makeInstructions() {
         JPanel side = new JPanel();
         side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS));
         side.setBackground(BG);
         side.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 1, 0, 0, new Color(60, 62, 74)),
-                BorderFactory.createEmptyBorder(0, 20, 0, 0)));
-        side.setPreferredSize(new Dimension(230, 0));
+                BorderFactory.createEmptyBorder(0, 12, 0, 0)));
+        side.setPreferredSize(new Dimension(SIDE_WIDTH, 0));
 
         JLabel heading = new JLabel("Controller");
         heading.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
@@ -123,23 +131,28 @@ public class MenuScreen implements Screen {
         keys.setMaximumSize(keyBox);
         keys.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel text = new JLabel("<html><div style='width:190px; text-align:center'>"
-                + "Match the number on a game with the same number on the controller, "
-                + "then press that button to play."
-                + "<br><br>Or just tap the game on the screen."
-                + "</div></html>");
-        text.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-        text.setForeground(Color.LIGHT_GRAY);
-        text.setAlignmentX(Component.CENTER_ALIGNMENT);
-
         side.add(Box.createVerticalGlue());
         side.add(heading);
         side.add(Box.createVerticalStrut(10));
         side.add(keys);
         side.add(Box.createVerticalStrut(12));
-        side.add(text);
+        side.add(textLine("Match the number on a"));
+        side.add(textLine("game with the same number"));
+        side.add(textLine("on the controller, then"));
+        side.add(textLine("press that button."));
+        side.add(Box.createVerticalStrut(8));
+        side.add(textLine("Or just tap the game."));
         side.add(Box.createVerticalGlue());
         return side;
+    }
+
+    /** One centered line of plain instruction text. */
+    private JLabel textLine(String s) {
+        JLabel l = new JLabel(s);
+        l.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
+        l.setForeground(Color.LIGHT_GRAY);
+        l.setAlignmentX(Component.CENTER_ALIGNMENT);
+        return l;
     }
 
     private JPanel makeTile(int index, String name) {
@@ -163,7 +176,7 @@ public class MenuScreen implements Screen {
         tile.add(label);
         tile.add(Box.createVerticalGlue());
 
-        app.onTap(tile, index);   // tapping the tile starts that game
+        app.onTap(tile, index); // tapping the tile starts that game
         return tile;
     }
 
@@ -185,8 +198,15 @@ public class MenuScreen implements Screen {
         shutdownBtn.setBackground(DANGER);
     }
 
-    @Override public String getTitle() { return "Menu"; }
-    @Override public JComponent getView() { return view; }
+    @Override
+    public String getTitle() {
+        return "Menu";
+    }
+
+    @Override
+    public JComponent getView() {
+        return view;
+    }
 
     public void setHint(String text) {
         SwingUtilities.invokeLater(() -> hint.setText(text));
