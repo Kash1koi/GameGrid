@@ -12,6 +12,7 @@ public class MenuScreen implements Screen {
     private static final Color ACCENT = new Color(80, 170, 255);
     private static final Color DANGER = new Color(150, 45, 45);
     private static final Color DANGER_ARMED = new Color(230, 40, 40);
+    private static final int KEY_SIZE = 40;   // size of each number square in the controller diagram
 
     private final App app;
     private final List<Screen> games;
@@ -85,6 +86,60 @@ public class MenuScreen implements Screen {
         bottom.add(hint, BorderLayout.NORTH);
         bottom.add(buttons, BorderLayout.CENTER);
         view.add(bottom, BorderLayout.SOUTH);
+
+        // right side: controller diagram and instructions
+        view.add(makeInstructions(), BorderLayout.EAST);
+    }
+
+    /** The "how to play" panel: a 3x3 diagram of the controller plus a short explanation. */
+    private JPanel makeInstructions() {
+        JPanel side = new JPanel();
+        side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS));
+        side.setBackground(BG);
+        side.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 1, 0, 0, new Color(60, 62, 74)),
+                BorderFactory.createEmptyBorder(0, 20, 0, 0)));
+        side.setPreferredSize(new Dimension(230, 0));
+
+        JLabel heading = new JLabel("Controller");
+        heading.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
+        heading.setForeground(Color.WHITE);
+        heading.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // 3x3 diagram, laid out like the physical buttons
+        JPanel keys = new JPanel(new GridLayout(3, 3, 6, 6));
+        keys.setBackground(BG);
+        for (int i = 0; i < 9; i++) {
+            boolean hasGame = i < games.size();
+            JLabel key = new JLabel(String.valueOf(i + 1), SwingConstants.CENTER);
+            key.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
+            key.setOpaque(true);
+            key.setForeground(hasGame ? Color.BLACK : Color.GRAY);
+            key.setBackground(hasGame ? ACCENT : new Color(40, 42, 52));
+            keys.add(key);
+        }
+        Dimension keyBox = new Dimension(3 * KEY_SIZE + 12, 3 * KEY_SIZE + 12);
+        keys.setPreferredSize(keyBox);
+        keys.setMaximumSize(keyBox);
+        keys.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel text = new JLabel("<html><div style='width:190px; text-align:center'>"
+                + "Match the number on a game with the same number on the controller, "
+                + "then press that button to play."
+                + "<br><br>Or just tap the game on the screen."
+                + "</div></html>");
+        text.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
+        text.setForeground(Color.LIGHT_GRAY);
+        text.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        side.add(Box.createVerticalGlue());
+        side.add(heading);
+        side.add(Box.createVerticalStrut(10));
+        side.add(keys);
+        side.add(Box.createVerticalStrut(12));
+        side.add(text);
+        side.add(Box.createVerticalGlue());
+        return side;
     }
 
     private JPanel makeTile(int index, String name) {
